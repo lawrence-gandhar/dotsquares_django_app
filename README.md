@@ -1,0 +1,2 @@
+# dotsquares_django_app
+dotsquares_django_app
