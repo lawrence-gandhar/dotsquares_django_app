@@ -1,13 +1,12 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
+from django.http import HttpResponse
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum, Subquery
 from django.db import transaction
-import json
+from django.views.generic.detail import DetailView
 
 from . models import *
 
@@ -37,9 +36,17 @@ class Home(View):
     
 # Logout
 # =================================================================================
+@login_required
 def logout_view(request):
     logout(request)
     return redirect('home')
+
+# Product View
+# =================================================================================
+class ProductsDetailView(LoginRequiredMixin, DetailView):
+    model = Products
+    
+
 
 
 # Category and Product Page
@@ -75,9 +82,6 @@ class CategoryView(LoginRequiredMixin, View):
         .values('id', 'name', 'price', 'stock', 'image')[:60]
 
         product_list = tuple(batched(list(map(dec_to_str, product_list)), 6))
-
-
-
 
         # Getting Cart data if available
         # =================================================================================
@@ -280,7 +284,7 @@ def place_order(request):
 # Orders View
 # =================================================================================
 
-class OrdersView(View):
+class OrdersView(LoginRequiredMixin,View):
     def get(self, request):
 
         order_details = OrderDetails.objects.filter(user_id = request.user.id) \
