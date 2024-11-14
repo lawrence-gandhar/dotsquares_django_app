@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html> 
+
+<html>  
+   <head> 
+        <meta charset = "utf-8"> 
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Orders</title> 
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    
+        <style>
+            body{
+                background-color:#eee;
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">Navbar</a>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                  <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'category_view' %}">Home</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="{% url 'orders_view' %}">My Orders</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12" style="padding:10px;">
+                    <table class="table table-bordered table-responsive" style="font-size:small;">
+                        <thead style="background-color:grey; text-align: center; color:#ffffff;">
+                            <th>Image</th>
+                            <th>Product Name</th>
+                            <th>Quantity</th>
+                            <th>Price Per Unit</th>
+                            <th>Amount</th>
+                        </thead>
+                        <tbody>
+                            {% if order_details|length > 0 %}
+                                {% for row in order_details %}
+                                    <tr>
+                                        <td colspan="5" style="background-color: #dddddd; font-weight: bold;">
+                                            Order REF : #{{row.order_hash|upper}} 
+                                            <span style="float:right">[Order Placed On : {{row.order_date}}]</span> 
+                                        </td>
+                                    </tr>
+                                    {% for key, val in row.purchase_details.items %}
+                                        <tr>
+                                            <td style="width:80px; text-align: center;">
+                                                <img src="{{val.image}}" style="max-height:100px; width:auto;">
+                                            </td>
+                                            <td>{{val.name}}</td>
+                                            <td>{{val.quantity}}</td>
+                                            <td>{{val.price_per_unit}}</td>
+                                            <td>{{val.amount}}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    <tr style="background-color: #008000; color:#ffffff; font-weight: bold;;">
+                                        <td colspan="3"></td>
+                                        <td>Total Amount</td>
+                                        <td>&#x20B9; {{row.total_amount}}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -92,7 +92,8 @@ class OrderDetails(models.Model):
     order_hash = models.CharField(max_length=255, blank=False, null=False, db_index=True, editable = False, unique=True)
     order_date = models.DateTimeField(auto_now_add=True, db_index=True)
     total_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0, null=False, blank=False)
-    products = models.JSONField(blank=True, null=True)
+    purchase_details = models.JSONField(blank=True, null=True)
+    product_ids = models.TextField(blank=True, null=True) 
 
     def __str__(self):
         return f'Order No :#{self.order_hash}'

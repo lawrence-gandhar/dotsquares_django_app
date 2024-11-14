@@ -5,7 +5,7 @@ from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
+from django.db.models import Sum, Subquery
 from django.db import transaction
 import json
 
@@ -41,6 +41,7 @@ def logout_view(request):
     logout(request)
     return redirect('home')
 
+
 # Category and Product Page
 # =================================================================================
 
@@ -56,20 +57,27 @@ class CategoryView(LoginRequiredMixin, View):
             return render(request, "error.html", {}) 
 
         categories = Categories.objects.filter(parent_id=self.category_id).values('id', 'name')
+        category_list = [self.category_id]
+        category_list = category_list + [x["id"] for x in categories]
 
-        # Get 60 Products for the children categories
+        # A Closure/Function for type casting the price 
         # =================================================================================
         
         def dec_to_str(x):
             x["price"] = str(x["price"])
             return x
 
-        category_list = [self.category_id]
-        category_list = category_list + [x["id"] for x in categories]
-
+        # Get 60 Products for the children categories and 
+        # divide in batches of 6 items per batch
+        # =================================================================================
+        
         product_list = Products.objects.filter(category_id__in = category_list).values('id', 'name', 'price', 'stock', 'image')[:60]
         product_list = tuple(batched(list(map(dec_to_str, product_list)), 6))
 
+
+        # Getting Cart data if available
+        # =================================================================================
+        
         cart_list = []
         try:
             get_my_cart = Cart.objects.get(user_id=request.user.id)
@@ -90,6 +98,9 @@ class CategoryView(LoginRequiredMixin, View):
             total_items += x["quantity"]
             present_in_cart.append(x["product_id"])  
 
+        # Context Manager for templates
+        # =================================================================================
+        
         context = {
             "categories": categories, 
             "products_list": product_list, 
@@ -100,7 +111,10 @@ class CategoryView(LoginRequiredMixin, View):
         }
 
         return render(request, "category.html", context)
-    
+
+# Set Product Stock
+# =================================================================================
+
 @login_required
 def set_product_stock(request):
     if request.method == "GET":
@@ -116,6 +130,11 @@ def set_product_stock(request):
             except:
                 return HttpResponse(0)
 
+        # Get or Create a Cart for a user, along with the products
+        # If a product exists in the cart then set the quantity selected
+        # else create the product entry for the cart
+        # =================================================================================
+        
         get_my_cart = None
         try:
             get_my_cart = Cart.objects.get(user_id = request.user.id)
@@ -138,6 +157,11 @@ def set_product_stock(request):
             return HttpResponse(1)
     return HttpResponse(0)
 
+
+# Delete Item from the cart
+# If an item is deleted from the cart, the stock for the product is reset 
+# And the entry is deleted from the product cart mapper
+# =================================================================================
 
 @login_required
 def delete_item_from_cart(request):
@@ -169,15 +193,33 @@ def delete_item_from_cart(request):
     return HttpResponse(0)
 
 
+# Clear Cart
+# If all the products are deleted from the cart, then the cart itself gets deleted
+# =================================================================================
+
 @login_required
 def clear_cart(request):
     try:
-        Cart.objects.get(user_id = request.user.id).delete()
-        return HttpResponse(1)
+        with transaction.atomic():
+            get_my_cart = Cart.objects.get(user_id = request.user.id)
+
+            ins = ProductCartMapper.objects.filter(cart_id = get_my_cart.id)
+
+            for row in ins:
+                product = Products.objects.get(id=row.product_id)
+                product.stock += row.quantity
+                product.save()
+                row.delete()
+
+            get_my_cart.delete()
+
+            return HttpResponse(1)
     except:
         return HttpResponse(0)
     
 
+# Place Order
+# =================================================================================
 
 @login_required
 def place_order(request):
@@ -191,17 +233,21 @@ def place_order(request):
                 return redirect("category_view")
             
             product_maps = ProductCartMapper.objects.select_related('product').filter(cart_id = cart_ins.id).values(
-                'product_id', 'product__name', 'quantity', 'product__price'
+                'product_id', 'product__name', 'quantity', 'product__price', 'product__image'
             )
 
-            product_json = {
-                row["product_id"]: {
-                    "product_name": row["product__name"], 
-                    "quantity": row["quantity"],
-                    "price_per_unit": str(row["product__price"]),
-                    "amount": str(row["product__price"] *  row["quantity"])
-                } for row in product_maps
-            }
+            product_json = {}
+            product_ids = []
+            for row in product_maps: 
+                product_json.update({
+                    row["product_id"]: {
+                        "quantity": row["quantity"],
+                        "price_per_unit": str(row["product__price"]),
+                        "amount": str(row["product__price"] *  row["quantity"])
+                    } 
+                })
+
+                product_ids.append(str(row["product_id"]))
 
             total_amount = str(format(sum([float(product_json[x]["amount"]) for x in product_json.keys()]), ".2f"))
             
@@ -210,7 +256,8 @@ def place_order(request):
             order_ins = OrderDetails.objects.create(
                 user_id = request.user.id,
                 total_amount = total_amount,
-                products = product_json
+                purchase_details = product_json,
+                product_ids = ','.join(product_ids)
             )
 
             hashed_data = hashlib.sha256((str(order_ins.id)+"_"+d_time.strftime("%Y-%m-%d %H:%M:%S")).encode('utf8')).hexdigest()
@@ -219,8 +266,32 @@ def place_order(request):
             order_ins.save()
             cart_ins.delete()
 
-            print(product_json, total_amount)
+            print(product_json, total_amount, product_ids)
             messages.success(request, "Order placed successfully")
     except:
         messages.error(request, "Unable to place the order. Please try again later")
     return redirect("category_view")
+
+
+# Orders View
+# =================================================================================
+
+class OrdersView(View):
+    def get(self, request):
+
+        order_details = OrderDetails.objects.filter(user_id = request.user.id) \
+            .values('id', 'order_hash', 'purchase_details', 'product_ids', 'total_amount', 'order_date').order_by("-id")
+        
+        for row in order_details:
+            row.update({
+                "total_items": len(row["purchase_details"])
+            }) 
+            row["order_hash"] = row["order_hash"][:10]
+        
+            products = Products.objects.filter(id__in = list(map(int, row["product_ids"].split(",")))).values('id', 'name', 'image')
+
+            for product in products:
+                row["purchase_details"][str(product["id"])].update(product) 
+
+        context = {"order_details": order_details}
+        return render(request, "orders.html", context=context)
