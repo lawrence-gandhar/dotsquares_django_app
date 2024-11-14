@@ -71,8 +71,12 @@ class CategoryView(LoginRequiredMixin, View):
         # divide in batches of 6 items per batch
         # =================================================================================
         
-        product_list = Products.objects.filter(category_id__in = category_list).values('id', 'name', 'price', 'stock', 'image')[:60]
+        product_list = Products.objects.filter(category_id__in = category_list) \
+        .values('id', 'name', 'price', 'stock', 'image')[:60]
+
         product_list = tuple(batched(list(map(dec_to_str, product_list)), 6))
+
+
 
 
         # Getting Cart data if available

@@ -55,15 +55,15 @@ class OrderDetailsAdmin(admin.ModelAdmin):
 @admin.register(ProductTags)
 class ProductTagsAdmin(admin.ModelAdmin):
     model = ProductTags
-    list_display = ('id', 'name', 'get_products')
+    list_display = ('id', 'name', 'get_products', )
     list_filter = ('name',)
 
     search_fields = ('name',)
 
     def get_products(self, obj):
-        return ", ".join([product.name for product in obj.product.all()])
-    
-    get_products.short_description = 'Mapped Products'
+        return " | ".join([product.name for product in obj.product.all()])
+        
+    get_products.short_description = 'Tagged Products'
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):

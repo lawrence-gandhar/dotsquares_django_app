@@ -53,7 +53,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-          <a class="navbar-brand" href="#">Navbar</a>
+          <a class="navbar-brand" href="#">E-Commerce</a>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -67,7 +67,10 @@
               </li>
             </ul>
             <form class="d-flex">
-              <button class="btn btn-warning" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Cart</button>
+              <button class="btn btn-warning btn-sm" type="button" data-bs-toggle="offcanvas" 
+                data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" style="font-weight: bold;">
+                Cart (<span id="button_item_count">{{total_items}}</span>)
+              </button>
             </form>
           </div>
         </div>
@@ -145,9 +148,9 @@
           <ul id="cart_items" style="margin:0px; padding:0px;">
             {% for item in cart_list %}
               <li style='list-style-type:none;border-bottom:1px solid #eeeeee;' id='list_item_{{item.product_id}}'>
-                <table class='table table-responsive table-borderless' style='border:0px;'><tr>
-                <td style='width:100px;' rowspan='2'><img src='{{item.product__image}}' style='max-height:80px; display:inline-block;width:auto'></td>
-                <td colspan='2'><h6>{{item.product__name}}</h6></td>
+                <table class='table table-responsive table-borderless' style='border:0px;margin-bottom:0px;'><tr>
+                <td style='width:80px; text-align: center; vertical-align: middle;' rowspan='2'><img src='{{item.product__image}}' style='max-height:80px; display:inline-block;max-width:80px;'></td>
+                <td colspan='2'><h6>{{item.product__name|upper}}</h6></td>
                 <td style='width:100px;'>
                 <div class='input-group' style='width:150px;'>
                 <span title='Add Item' style='cursor:pointer;' class='input-group-text' onclick='add_item({{item.product_id}}, {{item.price}})'>+</span>
@@ -183,6 +186,7 @@
 
       if(selected_items > 0){
         $("span#item_header").empty().append(selected_items+ " Item(s) are present in the cart");
+        $("#button_item_count").empty().append(selected_items);
       }
 
       function load_data(){
@@ -192,7 +196,6 @@
       }
 
       load_data();
-
 
       function calc_total_price(price, add=true, counter=1){
 
@@ -214,6 +217,7 @@
         $("span#total_amount").empty().append(total_price);
         if(selected_items > 0){
           $("span#item_header").empty().append(selected_items+ " Item(s) are present in the cart");
+          $("#button_item_count").empty().append(selected_items);
         }
       }
       
@@ -224,9 +228,9 @@
 
         if(found == -1){
           htm = "<li style='list-style-type:none;border-bottom:1px solid #eeeeee;' id='list_item_"+item_data["id"]+"'>"; 
-          htm += "<table class='table table-responsive table-borderless' style='border:0px;'><tr>";
-          htm += "<td style='width:100px;' rowspan='2'><img src='"+item_data["image"]+"' style='max-height:80px; display:inline-block;width:auto'></td>";
-          htm += "<td colspan='2'><h6>"+item_data["name"]+"</h6></td>";
+          htm += "<table class='table table-responsive table-borderless' style='border:0px;margin-bottom:0px;'><tr>";
+          htm += "<td style='width:80px; text-align: center; vertical-align: middle' rowspan='2'><img src='"+item_data["image"]+"' style='max-height:80px; display:inline-block;max-width:80px'></td>";
+          htm += "<td colspan='2'><h6>"+item_data["name"].toUpperCase()+"</h6></td>";
           htm += "<td style='width:100px;'>";
           htm += "<div class='input-group' style='width:150px;'>";
           htm += "<span title='Add Item' style='cursor:pointer;' class='input-group-text' onclick='add_item("+item_data["id"]+", "+item_data["price"]+")'>+</span>";
