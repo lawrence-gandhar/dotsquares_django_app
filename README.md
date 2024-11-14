@@ -80,6 +80,7 @@ This will start the development server on port 8000.
 Open your favorite browser, and put in the below given url.
 
 `http://localhost:8000` This is for `Frontend`
+
 `http://localhost:8000/admin` This is for the `Admin Panel`
 
 
