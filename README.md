@@ -13,6 +13,14 @@
 
 ## Installation
 
+#### Requirements
+----
+Python Version :: Python 3.12.7
+Django Version :: Django==5.0.7
+
+
+### STEPS TO SETUP
+----
 #### Step 1 :: Setting up a Virtual Environment
 
 Install virtualenv package using pip for creating a virtual environment.
